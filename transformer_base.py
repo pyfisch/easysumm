@@ -128,16 +128,6 @@ class BaseTransformer(pl.LightningModule):
     def test_dataloader(self):
         return self.load_dataset("test", self.hparams.eval_batch_size)
 
-    def _feature_file(self, mode):
-        return os.path.join(
-            self.hparams.data_dir,
-            "cached_{}_{}_{}".format(
-                mode,
-                list(filter(None, self.hparams.model_name_or_path.split("/"))).pop(),
-                str(self.hparams.max_seq_length),
-            ),
-        )
-
     @staticmethod
     def add_model_specific_args(parser, root_dir):
         parser.add_argument(
@@ -191,8 +181,7 @@ class LoggingCallback(pl.Callback):
             metrics = trainer.callback_metrics
 
             # Log and save results to file
-            output_test_results_file = os.path.join(pl_module.hparams.output_dir, "test_results.txt")
-            with open(output_test_results_file, "w") as writer:
+            with open(pl_module.hparams.pred_file + ".metrics", "w") as writer:
                 for key in sorted(metrics):
                     if key not in ["log", "progress_bar"]:
                         logger.info("{} = {}\n".format(key, str(metrics[key])))
@@ -200,14 +189,6 @@ class LoggingCallback(pl.Callback):
 
 
 def add_generic_args(parser, root_dir):
-    parser.add_argument(
-        "--output_dir",
-        default=None,
-        type=str,
-        required=True,
-        help="The output directory where the model predictions and checkpoints will be written.",
-    )
-
     parser.add_argument(
         "--fp16",
         action="store_true",
@@ -241,22 +222,19 @@ def generic_train(model: BaseTransformer, args: argparse.Namespace):
     # init model
     set_seed(args)
 
-    if os.path.exists(args.output_dir) and os.listdir(args.output_dir) and args.do_train:
-        raise ValueError("Output directory ({}) already exists and is not empty.".format(args.output_dir))
-
-    checkpoint_callback = pl.callbacks.ModelCheckpoint(
-        filepath=args.output_dir, prefix="checkpoint", monitor="val_loss", mode="min", save_top_k=5
-    )
-
     train_params = dict(
         accumulate_grad_batches=args.gradient_accumulation_steps,
         gpus=args.n_gpu,
         max_epochs=args.num_train_epochs,
         early_stop_callback=False,
         gradient_clip_val=args.max_grad_norm,
-        checkpoint_callback=checkpoint_callback,
         callbacks=[LoggingCallback()],
     )
+
+    if args.do_train:
+        train_params["checkpoint_callback"] = pl.callbacks.ModelCheckpoint(
+            filepath=args.checkpoint_dir, monitor="val_loss", mode="min", save_top_k=5
+        )
 
     if args.fp16:
         train_params["use_amp"] = args.fp16
@@ -273,8 +251,5 @@ def generic_train(model: BaseTransformer, args: argparse.Namespace):
         train_params["distributed_backend"] = "ddp"
 
     trainer = pl.Trainer(**train_params)
-
-    if args.do_train:
-        trainer.fit(model)
 
     return trainer
