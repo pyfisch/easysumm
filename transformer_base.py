@@ -206,8 +206,6 @@ def add_generic_args(parser, root_dir):
     parser.add_argument("--n_gpu", type=int, default=1)
     parser.add_argument("--n_tpu_cores", type=int, default=0)
     parser.add_argument("--max_grad_norm", default=1.0, type=float, help="Max gradient norm.")
-    parser.add_argument("--do_train", action="store_true", help="Whether to run training.")
-    parser.add_argument("--do_predict", action="store_true", help="Whether to run predictions on the test set.")
     parser.add_argument(
         "--gradient_accumulation_steps",
         type=int,
@@ -231,10 +229,9 @@ def generic_train(model: BaseTransformer, args: argparse.Namespace):
         callbacks=[LoggingCallback()],
     )
 
-    if args.do_train:
-        train_params["checkpoint_callback"] = pl.callbacks.ModelCheckpoint(
-            filepath=args.checkpoint_dir, monitor="val_loss", mode="min", save_top_k=5
-        )
+    train_params["checkpoint_callback"] = pl.callbacks.ModelCheckpoint(
+        filepath=args.checkpoint_dir, monitor="val_loss", mode="min", save_top_k=5
+    )
 
     if args.fp16:
         train_params["use_amp"] = args.fp16
