@@ -41,8 +41,8 @@ File format of dataset
 
 Each entry in a dataset consists of two documents: a text and the corresponding summary.
 A dataset split (e.g. training data) is stored in a pair of two files.
-The first file contains all texts separated by newlines and its name ends in `.source`.
-The second file contains all summaries in the same format and order as the first file and its name ends in `.target`.
+The first file contains all texts separated by newlines and its name ends in `.Ndocument`.
+The second file contains all summaries in the same format and order as the first file and its name ends in `.Nsummary`.
 
 To train the model the path and filename prefix is specified with two different command line arguments:
 

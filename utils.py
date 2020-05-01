@@ -11,10 +11,10 @@ class SummarizationDataset(Dataset):
         super().__init__()
         self.tokenizer = tokenizer
         self.source = encode_file(
-            tokenizer, os.path.join(data_prefix + ".source"), max_source_length
+            tokenizer, os.path.join(data_prefix + ".Ndocument"), max_source_length
         )
         self.target = encode_file(
-            tokenizer, os.path.join(data_prefix + ".target"), max_target_length
+            tokenizer, os.path.join(data_prefix + ".Nsummary"), max_target_length
         )
 
     def __len__(self):
