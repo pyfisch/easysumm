@@ -101,12 +101,6 @@ class BaseTransformer(pl.LightningModule):
         tqdm_dict = {"loss": "{:.3f}".format(avg_loss), "lr": self.lr_scheduler.get_last_lr()[-1]}
         return tqdm_dict
 
-    def test_step(self, batch, batch_nb):
-        return self.validation_step(batch, batch_nb)
-
-    def test_end(self, outputs):
-        return self.validation_end(outputs)
-
     def train_dataloader(self):
         train_batch_size = self.hparams.train_batch_size
         dataloader = self.load_dataset("train", train_batch_size)
@@ -124,9 +118,6 @@ class BaseTransformer(pl.LightningModule):
 
     def val_dataloader(self):
         return self.load_dataset("dev", self.hparams.eval_batch_size)
-
-    def test_dataloader(self):
-        return self.load_dataset("test", self.hparams.eval_batch_size)
 
     @staticmethod
     def add_model_specific_args(parser, root_dir):
@@ -173,19 +164,6 @@ class LoggingCallback(pl.Callback):
             for key in sorted(metrics):
                 if key not in ["log", "progress_bar"]:
                     logger.info("{} = {}\n".format(key, str(metrics[key])))
-
-    def on_test_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
-        logger.info("***** Test results *****")
-
-        if pl_module.is_logger():
-            metrics = trainer.callback_metrics
-
-            # Log and save results to file
-            with open(pl_module.hparams.pred_file + ".metrics", "w") as writer:
-                for key in sorted(metrics):
-                    if key not in ["log", "progress_bar"]:
-                        logger.info("{} = {}\n".format(key, str(metrics[key])))
-                        writer.write("{} = {}\n".format(key, str(metrics[key])))
 
 
 def add_generic_args(parser, root_dir):
